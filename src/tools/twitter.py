@@ -13,7 +13,8 @@ def _get_client() -> tweepy.Client:
 
 
 def search_twitter(query: str, max_results: int = 20) -> dict:
-    full_query = f"{query} -is:retweet lang:en"
+    # Restrict to India; Gurgaon/Bangalore context narrowed further by the agent
+    full_query = f"{query} (Gurgaon OR Gurugram OR Bangalore OR Bengaluru OR India) -is:retweet lang:en place_country:IN"
     max_results = max(10, min(max_results, 100))
     try:
         response = _get_client().search_recent_tweets(

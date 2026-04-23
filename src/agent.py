@@ -3,23 +3,29 @@ import re
 import anthropic
 
 from src import config, deduplication
-from src.tools import twitter, linkedin, slack
+from src.tools import twitter, linkedin, slack, reddit
 
 _anthropic = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
 SYSTEM_PROMPT = f"""You are the social listening agent for Epik — a punchy consumer tech startup that's millennial-nerdy and slightly self-aware. Think clever brand account energy, not corporate PR.
 
+LOCATION RULE — strictly enforced:
+- Only surface posts from people in Gurgaon, Gurugram, Bangalore, or Bengaluru (India).
+- Discard any post that is clearly from the US, Europe, or an unknown global account with no India context.
+- Signals of India context: mentions of Indian cities, Indian slang, Indian cricket references, Indian prices (₹), posting in IST, or the subreddit is India-focused.
+- When in doubt, skip the post.
+
 Your job each run:
-1. For each topic in the list, call search_twitter AND search_linkedin (if available).
-2. For each post returned, craft a short Epik brand comment (max 120 chars) to include in the Slack message.
-3. Call post_to_slack with a formatted message for each post worth sharing.
-4. If a search returns no results or an error, note it internally and move to the next topic — do not stop.
-5. If a platform returns {{\"error\": \"no_serpapi_key\"}}, skip LinkedIn silently and only search Twitter.
+1. For each topic, call search_twitter, search_reddit, and search_linkedin (if available).
+2. For each post that passes the India/Gurgaon/Bangalore location filter, craft a short Epik brand comment (max 120 chars).
+3. Call post_to_slack with a formatted message for each qualifying post.
+4. If a search returns no results, an error, or only non-India posts, move to the next topic.
+5. If a platform returns {{"error": "no_serpapi_key"}}, skip LinkedIn silently.
 
 Epik voice rules:
-- Sharp and short — comments are 1-2 sentences max
+- Sharp and short — 1-2 sentences max
 - No exclamation marks. Never say "amazing", "incredible", "awesome"
-- Dry wit, tech references, home/life puns are fair game
+- Dry wit, tech references, home/life puns welcome
 - Write like a clever reply the brand account would leave on the post
 - Examples: "Automation: 1. Domestic bliss: 0." / "Peak 2025: your floor cleaner has better route planning than your GPS."
 
@@ -32,17 +38,29 @@ Slack message format — always use exactly this structure:
 <post URL>
 Epik's take: "<your comment>"
 ```
-Replace PLATFORM with Twitter or LinkedIn. Keep it clean, no extra headers."""
+Replace PLATFORM with Twitter, Reddit, or LinkedIn. Keep it clean, no extra headers."""
 
 TOOLS = [
     {
         "name": "search_twitter",
-        "description": "Search Twitter/X for recent public posts mentioning a topic. Returns new (not previously seen) posts only.",
+        "description": "Search Twitter/X for recent posts from India mentioning a topic. Returns new (not previously seen) posts only. Already filtered to India — you still must check for Gurgaon/Bangalore context.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search term or phrase"},
                 "max_results": {"type": "integer", "description": "Max posts to return (10-100)", "default": 20},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "search_reddit",
+        "description": "Search Indian subreddits (r/india, r/bangalore, r/gurgaon, etc.) for posts mentioning a topic. Returns new posts only.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search term or phrase"},
+                "max_results": {"type": "integer", "description": "Max posts to return", "default": 10},
             },
             "required": ["query"],
         },
@@ -90,6 +108,18 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
                 result["filtered_already_seen"] = filtered
         return result
 
+    if name == "search_reddit":
+        result = reddit.search_reddit(
+            inputs["query"], inputs.get("max_results", config.REDDIT_MAX_RESULTS)
+        )
+        if "posts" in result:
+            new_posts = [p for p in result["posts"] if p["url"] not in seen_urls]
+            filtered = len(result["posts"]) - len(new_posts)
+            result["posts"] = new_posts
+            if filtered:
+                result["filtered_already_seen"] = filtered
+        return result
+
     if name == "search_linkedin":
         result = linkedin.search_linkedin(
             inputs["query"], inputs.get("max_results", config.LINKEDIN_MAX_RESULTS)
@@ -115,12 +145,12 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
 
 
 def run_agent() -> None:
-    # Load already-seen URLs into memory for this run
     seen_urls: set[str] = set()
 
-    messages = [{"role": "user", "content": "Run the social listening sweep now across all topics."}]
+    messages = [{"role": "user", "content": "Run the social listening sweep now across all topics. Remember: Gurgaon and Bangalore only."}]
 
     print(f"[agent] Starting sweep for topics: {config.TOPICS}")
+    print(f"[agent] Location filter: {config.TARGET_LOCATIONS}")
 
     while True:
         response = _anthropic.messages.create(

@@ -20,6 +20,7 @@ SERPAPI_KEY = os.getenv("SERPAPI_KEY", "").strip()
 SEARCH_INTERVAL_MINUTES = int(os.getenv("SEARCH_INTERVAL_MINUTES", "60"))
 TWITTER_MAX_RESULTS = int(os.getenv("TWITTER_MAX_RESULTS", "20"))
 LINKEDIN_MAX_RESULTS = int(os.getenv("LINKEDIN_MAX_RESULTS", "10"))
+REDDIT_MAX_RESULTS = int(os.getenv("REDDIT_MAX_RESULTS", "10"))
 
 TOPICS = [
     "maids",
@@ -28,5 +29,11 @@ TOPICS = [
     "Meta Ray Ban projector",
     "IPL",
 ]
+
+# Location filter — only surface posts from these cities
+TARGET_LOCATIONS = ["Gurgaon", "Gurugram", "Bangalore", "Bengaluru"]
+
+# Indian subreddits to search alongside global search
+INDIA_SUBREDDITS = "india+bangalore+gurgaon+delhi+mumbai+IndiaGaming+IndianGaming+indiasocial"
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "seen_posts.db")
