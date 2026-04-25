@@ -10,7 +10,7 @@ def _require(key: str) -> str:
     return val
 
 ANTHROPIC_API_KEY = _require("ANTHROPIC_API_KEY")
-TWITTER_BEARER_TOKEN = _require("TWITTER_BEARER_TOKEN")
+TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN", "").strip()
 SLACK_BOT_TOKEN = _require("SLACK_BOT_TOKEN")
 SLACK_CHANNEL_NAME = os.getenv("SLACK_CHANNEL_NAME", "social-listening")
 
