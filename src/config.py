@@ -26,9 +26,14 @@ TOPICS = [
     "maids",
     "cleaning",
     "robo vacuum",
+    "Pronto",
+    "Snabbit",
     "Meta Ray Ban projector",
     "IPL",
 ]
+
+# Brands known to be India-based — skip location filtering for these
+INDIA_NATIVE_BRANDS = {"Pronto", "Snabbit"}
 
 # Location filter — only surface posts from these cities
 TARGET_LOCATIONS = ["Gurgaon", "Gurugram", "Bangalore", "Bengaluru"]

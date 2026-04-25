@@ -3,7 +3,7 @@ import re
 import anthropic
 
 from src import config, deduplication
-from src.tools import twitter, linkedin, slack, reddit
+from src.tools import twitter, linkedin, slack, reddit, excel_logger
 
 _anthropic = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
@@ -13,11 +13,12 @@ LOCATION RULE — strictly enforced:
 - Only surface posts from people in Gurgaon, Gurugram, Bangalore, or Bengaluru (India).
 - Discard any post that is clearly from the US, Europe, or an unknown global account with no India context.
 - Signals of India context: mentions of Indian cities, Indian slang, Indian cricket references, Indian prices (₹), posting in IST, or the subreddit is India-focused.
+- Exception: posts about Pronto or Snabbit are always India-relevant — these are India-only home-services startups. Accept any post about them regardless of explicit location signals.
 - When in doubt, skip the post.
 
 Your job each run:
-1. For each topic, call search_twitter, search_reddit, and search_linkedin (if available).
-2. For each post that passes the India/Gurgaon/Bangalore location filter, craft a short Epik brand comment (max 120 chars).
+1. For each topic, call search_linkedin first (most valuable for brand/competitor intel), then search_twitter and search_reddit.
+2. For each post that passes the location filter, craft a short Epik brand comment (max 120 chars).
 3. Call post_to_slack with a formatted message for each qualifying post.
 4. If a search returns no results, an error, or only non-India posts, move to the next topic.
 5. If a platform returns {{"error": "no_serpapi_key"}}, skip LinkedIn silently.
@@ -139,6 +140,7 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
             for url in _extract_urls(message):
                 deduplication.mark_seen(url)
                 seen_urls.add(url)
+            excel_logger.append_post(message)
         return {"success": success}
 
     return {"error": f"unknown tool: {name}"}
