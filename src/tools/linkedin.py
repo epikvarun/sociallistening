@@ -8,9 +8,11 @@ def search_linkedin(query: str, max_results: int = 10) -> dict:
     if not config.SERPAPI_KEY:
         return {"error": "no_serpapi_key", "posts": [], "note": "Set SERPAPI_KEY to enable LinkedIn search"}
 
+    india_native = query in getattr(config, "INDIA_NATIVE_BRANDS", set())
+    location_hint = "" if india_native else " (India OR Gurgaon OR Bangalore OR Bengaluru)"
     params = {
         "engine": "google",
-        "q": f'site:linkedin.com/posts "{query}" -intitle:jobs',
+        "q": f'site:linkedin.com/posts "{query}"{location_hint} -intitle:jobs',
         "api_key": config.SERPAPI_KEY,
         "num": max_results,
     }
