@@ -3,7 +3,7 @@ import re
 import anthropic
 
 from src import config, deduplication
-from src.tools import twitter, linkedin, slack, reddit
+from src.tools import twitter, linkedin, slack, reddit, excel_logger
 
 _anthropic = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
@@ -140,6 +140,7 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
             for url in _extract_urls(message):
                 deduplication.mark_seen(url)
                 seen_urls.add(url)
+            excel_logger.append_post(message)
         return {"success": success}
 
     return {"error": f"unknown tool: {name}"}
