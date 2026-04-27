@@ -18,6 +18,7 @@ SLACK_CHANNEL_NAME = os.getenv("SLACK_CHANNEL_NAME", "social-listening")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "").strip()
 
 SEARCH_INTERVAL_MINUTES = int(os.getenv("SEARCH_INTERVAL_MINUTES", "60"))
+DAILY_DIGEST_HOUR = int(os.getenv("DAILY_DIGEST_HOUR", "9"))  # 9 AM IST by default
 TWITTER_MAX_RESULTS = int(os.getenv("TWITTER_MAX_RESULTS", "20"))
 LINKEDIN_MAX_RESULTS = int(os.getenv("LINKEDIN_MAX_RESULTS", "10"))
 REDDIT_MAX_RESULTS = int(os.getenv("REDDIT_MAX_RESULTS", "10"))
