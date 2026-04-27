@@ -13,9 +13,12 @@ def _get_client() -> tweepy.Client:
 
 
 def search_twitter(query: str, max_results: int = 20) -> dict:
-    # Restrict to India; Gurgaon/Bangalore context narrowed further by the agent
     full_query = f"{query} (Gurgaon OR Gurugram OR Bangalore OR Bengaluru OR India) -is:retweet lang:en place_country:IN"
     max_results = max(10, min(max_results, 100))
+
+    if config.DEBUG_MODE:
+        print(f"[twitter/debug] Query: {full_query}")
+
     try:
         response = _get_client().search_recent_tweets(
             query=full_query,
@@ -30,6 +33,9 @@ def search_twitter(query: str, max_results: int = 20) -> dict:
         return {"error": "invalid_bearer_token", "posts": []}
     except Exception as e:
         return {"error": str(e), "posts": []}
+
+    if config.DEBUG_MODE:
+        print(f"[twitter/debug] Response data count: {len(response.data) if response.data else 0}")
 
     if not response.data:
         return {"posts": []}

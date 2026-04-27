@@ -17,6 +17,9 @@ SLACK_CHANNEL_NAME = os.getenv("SLACK_CHANNEL_NAME", "social-listening")
 # Optional — LinkedIn sweep is skipped if not set
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "").strip()
 
+# Debug mode — logs full API responses for troubleshooting
+DEBUG_MODE = os.getenv("DEBUG_MODE", "").lower() in ("1", "true", "yes")
+
 SEARCH_INTERVAL_MINUTES = int(os.getenv("SEARCH_INTERVAL_MINUTES", "60"))
 TWITTER_MAX_RESULTS = int(os.getenv("TWITTER_MAX_RESULTS", "20"))
 LINKEDIN_MAX_RESULTS = int(os.getenv("LINKEDIN_MAX_RESULTS", "10"))

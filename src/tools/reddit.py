@@ -1,3 +1,4 @@
+import json
 import requests
 from src import config
 
@@ -10,6 +11,9 @@ _HEADERS = {"User-Agent": "EpikSocialBot/1.0"}
 def search_reddit(query: str, max_results: int = 10) -> dict:
     posts = []
 
+    if config.DEBUG_MODE:
+        print(f"[reddit/debug] Query: {query}, subreddits: {config.INDIA_SUBREDDITS}")
+
     # 1. Search within Indian subreddits first
     try:
         resp = requests.get(
@@ -19,7 +23,10 @@ def search_reddit(query: str, max_results: int = 10) -> dict:
             timeout=15,
         )
         resp.raise_for_status()
-        for item in resp.json().get("data", {}).get("children", []):
+        data = resp.json()
+        if config.DEBUG_MODE:
+            print(f"[reddit/debug] Subreddit search response:\n{json.dumps(data, indent=2)[:1500]}")
+        for item in data.get("data", {}).get("children", []):
             d = item["data"]
             posts.append({
                 "url": f"https://reddit.com{d['permalink']}",

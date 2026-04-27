@@ -1,3 +1,4 @@
+import json
 import requests
 from src import config
 
@@ -17,6 +18,9 @@ def search_linkedin(query: str, max_results: int = 10) -> dict:
         "num": max_results,
     }
 
+    if config.DEBUG_MODE:
+        print(f"[linkedin/debug] Query: {params['q']}")
+
     try:
         resp = requests.get(SERPAPI_URL, params=params, timeout=15)
         resp.raise_for_status()
@@ -26,10 +30,17 @@ def search_linkedin(query: str, max_results: int = 10) -> dict:
     except requests.exceptions.RequestException as e:
         return {"error": str(e), "posts": []}
 
+    if config.DEBUG_MODE:
+        print(f"[linkedin/debug] Full SerpAPI response:\n{json.dumps(data, indent=2)[:2000]}")
+
     if "error" in data:
         return {"error": data["error"], "posts": []}
 
     organic = data.get("organic_results", [])
+
+    if config.DEBUG_MODE:
+        print(f"[linkedin/debug] organic_results count: {len(organic)}")
+
     posts = []
     for item in organic[:max_results]:
         posts.append({
