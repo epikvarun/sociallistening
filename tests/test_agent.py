@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+import runpy
 import unittest
 from unittest import mock
 
@@ -39,6 +40,13 @@ class FakeMessages:
 
 
 class AgentTests(unittest.TestCase):
+    def test_share_top10_script_invokes_limited_run(self) -> None:
+        _load_agent()
+        with mock.patch("src.agent.run_agent") as run_agent:
+            runpy.run_path("scripts/share_top10.py", run_name="__main__")
+
+        run_agent.assert_called_once_with(post_limit=10)
+
     def test_run_agent_stops_after_post_limit(self) -> None:
         agent = _load_agent()
         posted_messages: list[str] = []
