@@ -1,21 +1,19 @@
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+import requests
 from src import config
-
-_client: WebClient | None = None
-
-
-def _get_client() -> WebClient:
-    global _client
-    if _client is None:
-        _client = WebClient(token=config.SLACK_BOT_TOKEN)
-    return _client
 
 
 def post_to_slack(channel: str, message: str) -> bool:
+    """Post a message to Slack via incoming webhook."""
     try:
-        response = _get_client().chat_postMessage(channel=channel, text=message)
-        return bool(response.get("ok"))
-    except SlackApiError as e:
-        print(f"[slack] Error posting to #{channel}: {e.response['error']}")
+        response = requests.post(
+            config.SLACK_WEBHOOK_URL,
+            json={"text": message},
+            timeout=10,
+        )
+        if response.status_code == 200 and response.text == "ok":
+            return True
+        print(f"[slack] Webhook error: {response.status_code} - {response.text}")
+        return False
+    except requests.RequestException as e:
+        print(f"[slack] Request failed: {e}")
         return False
