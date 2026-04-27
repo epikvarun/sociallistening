@@ -8,7 +8,7 @@ import anthropic
 from datetime import datetime
 
 from src import config
-from src.tools import linkedin, reddit, twitter, slack, excel_logger
+from src.tools import linkedin, reddit, twitter, slack, excel_logger, emailer
 
 SEARCH_TOPICS = [
     ("Pronto", True),
@@ -125,6 +125,7 @@ def run_daily_digest() -> None:
 
     print(f"[digest] Found {len(posts)} posts. Posting to #{channel} ...")
 
+    enriched: list[dict] = []
     for i, post in enumerate(posts, start=1):
         take = _epik_take(post.get("text", ""), post["topic"])
         message = _format_post_message(i, len(posts), post, take)
@@ -136,10 +137,15 @@ def run_daily_digest() -> None:
         if success:
             excel_logger.append_post(message)
 
+        enriched.append({**post, "take": take})
+
     # Footer
     slack.post_to_slack(channel, (
         f"✅ *{len(posts)} posts above are ready for your comments.*\n"
         f"Open each 🔗 link → paste the 💬 comment → hit post."
     ))
+
+    # Email digest
+    emailer.send_digest(enriched)
 
     print(f"[digest] Done. Excel: {excel_logger.EXCEL_PATH}")
