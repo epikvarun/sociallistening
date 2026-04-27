@@ -1,9 +1,17 @@
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from src import config
 from src.agent import run_agent
+
+
+def build_daily_trigger() -> CronTrigger:
+    return CronTrigger(
+        hour=config.DAILY_DIGEST_HOUR,
+        minute=config.DAILY_DIGEST_MINUTE,
+        timezone=config.TIMEZONE,
+    )
 
 
 def scheduled_run() -> None:
@@ -18,15 +26,18 @@ if __name__ == "__main__":
     print(f"Social listening agent starting.")
     print(f"Topics: {config.TOPICS}")
     print(f"Slack channel: #{config.SLACK_CHANNEL_NAME}")
-    print(f"Sweep interval: every {config.SEARCH_INTERVAL_MINUTES} minutes")
+    print(
+        "Daily digest: "
+        f"{config.DAILY_DIGEST_HOUR:02d}:{config.DAILY_DIGEST_MINUTE:02d} "
+        f"{config.TIMEZONE}"
+    )
     print(f"LinkedIn: {'enabled (SerpAPI configured)' if config.SERPAPI_KEY else 'disabled (no SERPAPI_KEY)'}")
     print("-" * 60)
 
     scheduler = BlockingScheduler()
     scheduler.add_job(
         scheduled_run,
-        IntervalTrigger(minutes=config.SEARCH_INTERVAL_MINUTES),
-        next_run_time=datetime.now(),  # run immediately on start
+        build_daily_trigger(),
     )
 
     try:

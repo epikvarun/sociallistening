@@ -96,7 +96,13 @@ def _extract_urls(text: str) -> list[str]:
     return re.findall(r"https?://\S+", text)
 
 
-def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
+def _dispatch(
+    name: str,
+    inputs: dict,
+    seen_urls: set[str],
+    post_limit: int | None = None,
+    posted_count: int = 0,
+) -> dict:
     if name == "search_twitter":
         result = twitter.search_twitter(
             inputs["query"], inputs.get("max_results", config.TWITTER_MAX_RESULTS)
@@ -134,6 +140,9 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
         return result
 
     if name == "post_to_slack":
+        if post_limit is not None and posted_count >= post_limit:
+            return {"success": False, "skipped": "post_limit_reached", "post_limit": post_limit}
+
         message = inputs["message"]
         success = slack.post_to_slack(config.SLACK_CHANNEL_NAME, message)
         if success:
@@ -146,8 +155,9 @@ def _dispatch(name: str, inputs: dict, seen_urls: set[str]) -> dict:
     return {"error": f"unknown tool: {name}"}
 
 
-def run_agent() -> None:
+def run_agent(post_limit: int | None = None) -> int:
     seen_urls: set[str] = set()
+    posted_count = 0
 
     messages = [{"role": "user", "content": "Run the social listening sweep now across all topics. Remember: Gurgaon and Bangalore only."}]
 
@@ -155,6 +165,10 @@ def run_agent() -> None:
     print(f"[agent] Location filter: {config.TARGET_LOCATIONS}")
 
     while True:
+        if post_limit is not None and posted_count >= post_limit:
+            print(f"[agent] Post limit reached ({post_limit}). Ending sweep.")
+            break
+
         response = _anthropic.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=8096,
@@ -177,8 +191,12 @@ def run_agent() -> None:
         for block in response.content:
             if block.type != "tool_use":
                 continue
+            if post_limit is not None and posted_count >= post_limit:
+                break
             print(f"[agent] Tool call: {block.name}({json.dumps(block.input)})")
-            result = _dispatch(block.name, block.input, seen_urls)
+            result = _dispatch(block.name, block.input, seen_urls, post_limit, posted_count)
+            if block.name == "post_to_slack" and result.get("success"):
+                posted_count += 1
             print(f"[agent] Tool result: {json.dumps(result)[:200]}")
             tool_results.append({
                 "type": "tool_result",
@@ -187,3 +205,5 @@ def run_agent() -> None:
             })
 
         messages.append({"role": "user", "content": tool_results})
+
+    return posted_count
