@@ -17,7 +17,7 @@ def scheduled_run() -> None:
 if __name__ == "__main__":
     print(f"Social listening agent starting.")
     print(f"Topics: {config.TOPICS}")
-    print(f"Slack channel: #{config.SLACK_CHANNEL_NAME}")
+    print("Slack: webhook configured")
     print(f"Sweep interval: every {config.SEARCH_INTERVAL_MINUTES} minutes")
     print(f"LinkedIn: {'enabled (SerpAPI configured)' if config.SERPAPI_KEY else 'disabled (no SERPAPI_KEY)'}")
     print("-" * 60)

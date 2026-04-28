@@ -11,8 +11,7 @@ def _require(key: str) -> str:
 
 ANTHROPIC_API_KEY = _require("ANTHROPIC_API_KEY")
 TWITTER_BEARER_TOKEN = _require("TWITTER_BEARER_TOKEN")
-SLACK_BOT_TOKEN = _require("SLACK_BOT_TOKEN")
-SLACK_CHANNEL_NAME = os.getenv("SLACK_CHANNEL_NAME", "social-listening")
+SLACK_WEBHOOK_URL = _require("SLACK_WEBHOOK_URL")
 
 # Optional — LinkedIn sweep is skipped if not set
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "").strip()
